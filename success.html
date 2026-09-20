@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0B7A2F">
+
+<title>NYOTA FUNDS - Payment Successful</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    min-height:100vh;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+        radial-gradient(circle at 10% 10%,rgba(34,197,94,.35),transparent 28%),
+        radial-gradient(circle at 90% 90%,rgba(59,130,246,.35),transparent 28%),
+        linear-gradient(135deg,#0B7A2F,#2563EB);
+    color:white;
+}
+
+/* Card */
+
+.container{
+    width:100%;
+    max-width:420px;
+    padding:15px;
+    position:relative;
+    z-index:10;
+}
+
+.card{
+    background:rgba(255,255,255,.12);
+    backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:22px;
+    padding:30px 22px;
+    text-align:center;
+    box-shadow:0 20px 50px rgba(0,0,0,.30);
+}
+
+.badge{
+    display:inline-block;
+    background:#16A34A;
+    padding:8px 18px;
+    border-radius:40px;
+    font-size:12px;
+    font-weight:bold;
+    margin-bottom:18px;
+}
+
+.check{
+    width:90px;
+    height:90px;
+    margin:auto;
+    margin-bottom:18px;
+    border-radius:50%;
+    background:#16A34A;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:46px;
+    animation:pop .6s ease;
+}
+
+@keyframes pop{
+    0%{
+        transform:scale(.2);
+    }
+    70%{
+        transform:scale(1.15);
+    }
+    100%{
+        transform:scale(1);
+    }
+}
+
+h1{
+    font-size:28px;
+    margin-bottom:10px;
+}
+
+.name{
+    font-size:21px;
+    font-weight:bold;
+    color:#DCFCE7;
+    margin-bottom:18px;
+}
+
+p{
+    color:rgba(255,255,255,.92);
+    line-height:1.6;
+    font-size:14px;
+    margin-bottom:12px;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    margin-top:18px;
+    border:none;
+    border-radius:12px;
+    background:#16A34A;
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#15803D;
+}
+
+/* Flowers */
+
+.flower{
+    position:fixed;
+    top:-60px;
+    pointer-events:none;
+    z-index:1;
+    animation:fall linear forwards;
+}
+
+@keyframes fall{
+
+    0%{
+        transform:
+            translateY(-80px)
+            rotate(0deg);
+        opacity:1;
+    }
+
+    100%{
+        transform:
+            translateY(110vh)
+            rotate(1080deg);
+        opacity:.15;
+    }
+}
+
+/* Mobile */
+
+@media(max-width:400px){
+
+    .container{
+        max-width:390px;
+        padding:10px;
+    }
+
+    .card{
+        padding:24px 18px;
+    }
+
+    h1{
+        font-size:24px;
+    }
+
+    .name{
+        font-size:18px;
+    }
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<div class="badge">
+🌟 NYOTA FUNDS
+</div>
+
+<div class="check">
+✓
+</div>
+
+<h1>Congratulations!</h1>
+
+<div
+    class="name"
+    id="applicantName"
+>
+    Applicant
+</div>
+
+<p>
+Your payment has been confirmed successfully.
+</p>
+
+<p>
+Your NYOTA FUNDS application has been submitted for final verification.
+</p>
+
+<p>
+You are now one step closer to completing your application.
+</p>
+
+<p>
+Thank you for choosing NYOTA FUNDS.
+</p>
+
+<button onclick="finish()">
+Finish
+</button>
+
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+/* Applicant name */
+
+const applicant =
+    localStorage.getItem("fullname") ||
+    localStorage.getItem("fullName") ||
+    localStorage.getItem("applicantName") ||
+    "Applicant";
+
+document.getElementById(
+    "applicantName"
+).textContent = applicant;
+
+/* Flower celebration */
+
+const flowers = [
+    "🌸",
+    "🌺",
+    "🌹",
+    "🌼",
+    "🌷",
+    "🌻",
+    "💐",
+    "🌿"
+];
+
+function createFlower(){
+
+    const flower =
+        document.createElement("div");
+
+    flower.className = "flower";
+
+    flower.textContent =
+        flowers[
+            Math.floor(
+                Math.random()*flowers.length
+            )
+        ];
+
+    flower.style.left =
+        Math.random()*100 + "vw";
+
+    flower.style.fontSize =
+        (20 + Math.random()*28) + "px";
+
+    flower.style.animationDuration =
+        (4 + Math.random()*5) + "s";
+
+    document.body.appendChild(flower);
+
+    setTimeout(function(){
+
+        flower.remove();
+
+    },9000);
+
+}
+
+/* Start with many flowers */
+
+for(let i=0;i<50;i++){
+
+    setTimeout(
+        createFlower,
+        i*70
+    );
+
+}
+
+/* Continue every 120ms */
+
+const flowerInterval =
+    setInterval(
+        createFlower,
+        120
+    );
+
+/* Keep for 20 minutes */
+
+setTimeout(function(){
+
+    clearInterval(flowerInterval);
+
+},20*60*1000);
+
+function finish(){
+
+    alert(
+        "Thank you for choosing NYOTA FUNDS."
+    );
+
+}
+</script>
+
+</body>
+</html>
