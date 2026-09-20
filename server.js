@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const crypto = require("crypto");
+const path = require("path");
 
 const app = express();
 
@@ -14,25 +15,22 @@ const PAYLOR_API_URL = "https://api.paylorke.com";
 // CORS
 // ===============================
 
-app.use(
-  cors({
-    origin: true, // allows your deployed frontend
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"]
-  })
-);
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"]
+}));
 
 app.use(express.json());
 
 // ===============================
-// HEALTH CHECK
+// SERVE FRONTEND
 // ===============================
 
+app.use(express.static(path.join(__dirname, "public")));
+
 app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Paylor backend is running"
-  });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // ===============================
@@ -70,13 +68,9 @@ app.post("/stk-push", async (req, res) => {
       });
     }
 
-    const reference = `ORDER-${Date.now()}-${crypto
-      .randomBytes(4)
-      .toString("hex")}`.toUpperCase();
+    const reference = `ORDER-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`.toUpperCase();
 
-    const callbackUrl = `${
-      process.env.BACKEND_URL || `https://nyota-funds-jo.onrender.com`
-    }/api/paylor-callback`;
+    const callbackUrl = `${process.env.BACKEND_URL || "https://nyota-funds-jo.onrender.com"}/api/paylor-callback`;
 
     const payload = {
       phone: cleanPhone,
@@ -111,16 +105,13 @@ app.post("/stk-push", async (req, res) => {
       status: response.data.status,
       reference
     });
+
   } catch (error) {
-    console.error(
-      "STK Push error:",
-      error.response?.data || error.message
-    );
+    console.error("STK Push error:", error.response?.data || error.message);
 
     res.status(error.response?.status || 500).json({
       success: false,
-      message:
-        error.response?.data?.message || "Unable to initiate STK Push",
+      message: error.response?.data?.message || error.message,
       error: error.response?.data || null
     });
   }
@@ -142,9 +133,7 @@ app.post("/payment-status", async (req, res) => {
     }
 
     const response = await axios.get(
-      `${PAYLOR_API_URL}/api/v1/merchants/payments/transactions/${encodeURIComponent(
-        transactionId
-      )}`,
+      `${PAYLOR_API_URL}/api/v1/merchants/payments/transactions/${encodeURIComponent(transactionId)}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PAYLOR_API_KEY}`
@@ -157,16 +146,13 @@ app.post("/payment-status", async (req, res) => {
       success: true,
       data: response.data
     });
+
   } catch (error) {
-    console.error(
-      "Payment status error:",
-      error.response?.data || error.message
-    );
+    console.error("Payment status error:", error.response?.data || error.message);
 
     res.status(error.response?.status || 500).json({
       success: false,
-      message:
-        error.response?.data?.message || "Unable to check payment status",
+      message: error.response?.data?.message || error.message,
       error: error.response?.data || null
     });
   }
@@ -184,6 +170,7 @@ app.post("/api/paylor-callback", (req, res) => {
     res.json({
       success: true
     });
+
   } catch (error) {
     console.error("Callback error:", error);
 
@@ -210,11 +197,9 @@ app.get("/api/wallet", async (req, res) => {
     );
 
     res.json(response.data);
+
   } catch (error) {
-    console.error(
-      "Wallet error:",
-      error.response?.data || error.message
-    );
+    console.error("Wallet error:", error.response?.data || error.message);
 
     res.status(error.response?.status || 500).json({
       success: false,
