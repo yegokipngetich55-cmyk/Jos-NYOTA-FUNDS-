@@ -10,16 +10,19 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 const PAYLOR_API_URL = "https://api.paylorke.com";
 
+// ===============================
+// CORS
+// ===============================
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://nyota-program.onrender.com",
+    origin: true, // allows your deployed frontend
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"]
   })
 );
 
 app.use(express.json());
-
 
 // ===============================
 // HEALTH CHECK
@@ -31,7 +34,6 @@ app.get("/", (req, res) => {
     message: "Paylor backend is running"
   });
 });
-
 
 // ===============================
 // STK PUSH
@@ -52,7 +54,7 @@ app.post("/stk-push", async (req, res) => {
       .replace(/\s+/g, "")
       .replace(/^\+/, "");
 
-    if (!/^2547\d{8}$/.test(cleanPhone)) {
+    if (!/^254(?:7|1)\d{8}$/.test(cleanPhone)) {
       return res.status(400).json({
         success: false,
         message: "Use a valid Kenyan phone number, e.g. 254712345678"
@@ -68,13 +70,13 @@ app.post("/stk-push", async (req, res) => {
       });
     }
 
-    // Generate a unique reference for this payment
-    const reference =
-      `ORDER-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`
-        .toUpperCase();
+    const reference = `ORDER-${Date.now()}-${crypto
+      .randomBytes(4)
+      .toString("hex")}`.toUpperCase();
 
-    const callbackUrl =
-      `${process.env.BACKEND_URL}/api/paylor-callback`;
+    const callbackUrl = `${
+      process.env.BACKEND_URL || `https://nyota-funds-jo.onrender.com`
+    }/api/paylor-callback`;
 
     const payload = {
       phone: cleanPhone,
@@ -86,9 +88,7 @@ app.post("/stk-push", async (req, res) => {
     };
 
     console.log("Sending STK request to Paylor");
-    console.log("Reference:", reference);
-    console.log("Phone:", cleanPhone);
-    console.log("Amount:", paymentAmount);
+    console.log(payload);
 
     const response = await axios.post(
       `${PAYLOR_API_URL}/api/v1/merchants/payments/stk-push`,
@@ -105,29 +105,26 @@ app.post("/stk-push", async (req, res) => {
 
     console.log("Paylor response:", response.data);
 
-    return res.status(200).json({
+    res.json({
       success: true,
       transactionId: response.data.transactionId,
       status: response.data.status,
       reference
     });
-
   } catch (error) {
     console.error(
       "STK Push error:",
       error.response?.data || error.message
     );
 
-    return res.status(error.response?.status || 500).json({
+    res.status(error.response?.status || 500).json({
       success: false,
       message:
-        error.response?.data?.message ||
-        "Unable to initiate STK Push",
+        error.response?.data?.message || "Unable to initiate STK Push",
       error: error.response?.data || null
     });
   }
 });
-
 
 // ===============================
 // PAYMENT STATUS
@@ -145,7 +142,9 @@ app.post("/payment-status", async (req, res) => {
     }
 
     const response = await axios.get(
-      `${PAYLOR_API_URL}/api/v1/merchants/payments/transactions/${encodeURIComponent(transactionId)}`,
+      `${PAYLOR_API_URL}/api/v1/merchants/payments/transactions/${encodeURIComponent(
+        transactionId
+      )}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PAYLOR_API_KEY}`
@@ -154,59 +153,45 @@ app.post("/payment-status", async (req, res) => {
       }
     );
 
-    return res.status(200).json({
+    res.json({
       success: true,
       data: response.data
     });
-
   } catch (error) {
     console.error(
       "Payment status error:",
       error.response?.data || error.message
     );
 
-    return res.status(error.response?.status || 500).json({
+    res.status(error.response?.status || 500).json({
       success: false,
       message:
-        error.response?.data?.message ||
-        "Unable to check payment status",
+        error.response?.data?.message || "Unable to check payment status",
       error: error.response?.data || null
     });
   }
 });
 
-
 // ===============================
 // PAYLOR CALLBACK
 // ===============================
 
-app.post("/api/paylor-callback", async (req, res) => {
+app.post("/api/paylor-callback", (req, res) => {
   try {
     console.log("Paylor callback received:");
     console.log(JSON.stringify(req.body, null, 2));
 
-    /*
-      Paylor documentation says webhook callbacks
-      are signed.
-
-      Do NOT use an unverified callback as proof of payment.
-      The transaction-status endpoint above can be used
-      to reconcile the transaction.
-    */
-
-    return res.status(200).json({
+    res.json({
       success: true
     });
-
   } catch (error) {
     console.error("Callback error:", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false
     });
   }
 });
-
 
 // ===============================
 // WALLET
@@ -224,21 +209,19 @@ app.get("/api/wallet", async (req, res) => {
       }
     );
 
-    return res.status(200).json(response.data);
-
+    res.json(response.data);
   } catch (error) {
     console.error(
       "Wallet error:",
       error.response?.data || error.message
     );
 
-    return res.status(error.response?.status || 500).json({
+    res.status(error.response?.status || 500).json({
       success: false,
       message: "Unable to retrieve wallet"
     });
   }
 });
-
 
 // ===============================
 // 404
@@ -250,7 +233,6 @@ app.use((req, res) => {
     message: "Route not found"
   });
 });
-
 
 // ===============================
 // START SERVER
