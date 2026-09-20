@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>NYOTA FUNDS KENYA</title>
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#0B0217;
+color:#fff;
+min-height:100vh;
+}
+
+.container{
+max-width:500px;
+margin:auto;
+min-height:100vh;
+padding:20px;
+display:flex;
+flex-direction:column;
+}
+
+h1{
+text-align:center;
+color:#fff;
+font-size:28px;
+margin-bottom:20px;
+}
+
+.message{
+text-align:center;
+font-size:17px;
+line-height:1.8;
+margin-bottom:25px;
+color:rgba(255,255,255,0.72);
+}
+
+h2{
+text-align:center;
+color:#fff;
+font-size:22px;
+margin-bottom:20px;
+}
+
+.amount-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+}
+
+.amount-btn{
+background:rgba(255,255,255,0.055);
+color:#fff;
+border:1px solid rgba(255,255,255,0.10);
+border-radius:15px;
+padding:18px 10px;
+font-size:18px;
+font-weight:bold;
+cursor:pointer;
+transition:.3s;
+}
+
+.amount-btn.selected{
+background:linear-gradient(135deg,#9B35FF,#6C1DCE);
+border-color:#9B35FF;
+}
+
+#feeDisplay{
+margin:25px 0;
+text-align:center;
+font-size:20px;
+font-weight:bold;
+min-height:30px;
+color:rgba(255,255,255,0.85);
+}
+
+.continue-btn{
+margin-top:auto;
+width:100%;
+padding:18px;
+background:linear-gradient(135deg,#9B35FF,#6C1DCE);
+color:white;
+border:none;
+border-radius:15px;
+font-size:22px;
+font-weight:bold;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>NYOTA FUNDS KENYA</h1>
+
+<div class="message">
+
+Congratulations 🎉 <span id="applicantName"></span><br><br>
+
+You're eligible for <b>NYOTA Funds Limits.</b><br>
+
+Kindly choose the amount you want and pay the processing fee to continue.
+
+</div>
+
+<h2>Select Your NYOTA Fund Amount</h2>
+
+<div class="amount-grid">
+
+<button class="amount-btn" onclick="selectAmount(22000,this)">Ksh 22,000</button>
+
+<button class="amount-btn" onclick="selectAmount(30000,this)">Ksh 30,000</button>
+
+<button class="amount-btn" onclick="selectAmount(40000,this)">Ksh 40,000</button>
+
+<button class="amount-btn" onclick="selectAmount(50000,this)">Ksh 50,000</button>
+
+<button class="amount-btn" onclick="selectAmount(65000,this)">Ksh 65,000</button>
+
+<button class="amount-btn" onclick="selectAmount(75000,this)">Ksh 75,000</button>
+
+<button class="amount-btn" onclick="selectAmount(85000,this)">Ksh 85,000</button>
+
+<button class="amount-btn" onclick="selectAmount(110000,this)">Ksh 110,000</button>
+
+<button class="amount-btn" onclick="selectAmount(150000,this)">Ksh 150,000</button>
+
+</div>
+
+<div id="feeDisplay">
+Select an amount to see the processing fee.
+</div>
+
+<button class="continue-btn" onclick="continueNext()">
+Continue
+</button>
+<script>
+
+const fees = {
+22000:350,
+30000:400,
+40000:460,
+50000:520,
+65000:660,
+75000:780,
+85000:900,
+110000:1240,
+150000:1500
+};
+
+let selectedAmount = null;
+  
+document.getElementById("applicantName").textContent =
+localStorage.getItem("applicantName") || "Applicant";
+function selectAmount(amount, btn){
+
+selectedAmount = amount;
+
+document.querySelectorAll(".amount-btn").forEach(button=>{
+button.classList.remove("selected");
+});
+
+btn.classList.add("selected");
+
+document.getElementById("feeDisplay").innerHTML =
+"Processing Fee: <span style='color:#00ff66;'>Ksh " +
+fees[amount].toLocaleString() +
+"</span>";
+
+localStorage.setItem("selectedAmount", amount);
+localStorage.setItem("processingFee", fees[amount]);
+
+}
+
+function continueNext(){
+
+if(selectedAmount === null){
+alert("Please select an amount first.");
+return;
+}
+
+const button = document.querySelector(".continue-btn");
+
+button.textContent = "Processing...";
+button.disabled = true;
+button.style.opacity = "0.7";
+button.style.cursor = "not-allowed";
+
+setTimeout(() => {
+    window.location.href = "payment.html";
+}, 1000);
+
+}
+
+</script>
+
+</body>
+</html>
