@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0B0217">
+<title>NYOTA FUNDS — Payment</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    min-height:100vh;
+    padding:16px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:Arial,sans-serif;
+    background:#0B0217;
+    color:#fff;
+}
+
+.container{
+    width:100%;
+    max-width:430px;
+}
+
+.card{
+    width:100%;
+    padding:22px 18px 18px;
+    border-radius:18px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.09),
+            rgba(255,255,255,.035)
+        );
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+h1{
+    text-align:center;
+    font-size:22px;
+    margin:2px 0 8px;
+}
+
+p{
+    font-size:14px;
+    line-height:1.5;
+    color:rgba(255,255,255,.72);
+    text-align:center;
+}
+
+.amount{
+    margin:18px 0;
+    padding:14px 10px;
+    border-radius:12px;
+    text-align:center;
+    font-size:20px;
+    font-weight:700;
+    background:rgba(155,53,255,.08);
+    border:1px solid rgba(155,53,255,.18);
+}
+
+label{
+    display:block;
+    margin:15px 0 7px;
+    font-size:14px;
+    font-weight:700;
+    color:rgba(255,255,255,.88);
+}
+
+input{
+    width:100%;
+    padding:14px 12px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.07);
+    color:#fff;
+    font-size:16px;
+    outline:none;
+}
+
+input:focus{
+    border-color:rgba(169,72,255,.8);
+    box-shadow:0 0 0 3px rgba(155,55,255,.12);
+}
+
+input[readonly]{
+    opacity:.75;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    margin-top:17px;
+    border:0;
+    border-radius:11px;
+    background:linear-gradient(135deg,#9B35FF,#6C1DCE);
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 10px 30px rgba(137,43,226,.30);
+}
+
+button:hover{
+    background:linear-gradient(135deg,#A844FF,#7625DC);
+}
+
+button:disabled{
+    background:rgba(255,255,255,.25);
+    cursor:not-allowed;
+    box-shadow:none;
+}
+
+#stkMessage{
+    min-height:42px;
+    margin-top:13px;
+    color:#B86CFF;
+    font-size:13px;
+    font-weight:600;
+}
+
+.success{
+    color:#6DFFAA !important;
+}
+
+.error{
+    color:#FF7D8A !important;
+}
+
+.small{
+    font-size:12px !important;
+    color:rgba(255,255,255,.48) !important;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Processing Fee</h1>
+
+<p>
+Welcome, <strong id="name">Applicant</strong>
+</p>
+
+<p>
+Please complete the payment below to continue.
+</p>
+
+<div class="amount" id="feeAmount">
+Processing Fee: KSh 350
+</div>
+
+<label for="fullName">
+Full Name
+</label>
+
+<input
+    type="text"
+    id="fullName"
+    readonly
+>
+
+<label for="phone">
+M-PESA Phone Number
+</label>
+
+<input
+    type="tel"
+    id="phone"
+    inputmode="numeric"
+    autocomplete="tel"
+    placeholder="2547XXXXXXXX"
+    maxlength="12"
+>
+
+<button
+    id="payBtn"
+    type="button"
+>
+Pay Processing Fee
+</button>
+
+<p
+    id="stkMessage"
+    role="status"
+    aria-live="polite"
+></p>
+
+<p class="small">
+You will receive an M-PESA prompt on the number entered above.
+</p>
+
+</div>
+
+</div>
+
+<script>
+
+"use strict";
+
+/*
+ * IMPORTANT:
+ *
+ * PAYLOR_API_KEY
+ * PAYLOR_WEBHOOK_SECRET
+ * PAYLOR_CHANNEL_ID
+ *
+ * MUST NOT be placed in this HTML file.
+ *
+ * Keep them on your backend/server.
+ */
+
+const BACKEND_URL =
+    "https://nyota-program-backend.onrender.com";
+
+
+/* =========================
+   LOAD APPLICANT INFORMATION
+========================= */
+
+const applicant =
+    localStorage.getItem("applicantName") ||
+    "Applicant";
+
+const storedFee =
+    Number(
+        localStorage.getItem("processingFee") ||
+        "350"
+    );
+
+const processingFee =
+    Number.isFinite(storedFee) &&
+    storedFee > 0
+        ? storedFee
+        : 350;
+
+
+document.getElementById("name")
+    .textContent = applicant;
+
+document.getElementById("fullName")
+    .value = applicant;
+
+document.getElementById("feeAmount")
+    .textContent =
+        "Processing Fee: KSh " +
+        processingFee.toLocaleString("en-KE");
+
+
+/* =========================
+   ELEMENTS
+========================= */
+
+const phoneEl =
+    document.getElementById("phone");
+
+const payBtn =
+    document.getElementById("payBtn");
+
+const messageEl =
+    document.getElementById("stkMessage");
+
+
+/* =========================
+   MESSAGE
+========================= */
+
+function setMessage(
+    message,
+    type = ""
+){
+
+    messageEl.textContent =
+        message;
+
+    messageEl.className =
+        type;
+}
+
+
+/* =========================
+   PHONE NORMALIZATION
+========================= */
+
+function normalizePhone(value){
+
+    let phone =
+        value.replace(
+            /[^\d+]/g,
+            ""
+        );
+
+    if(
+        phone.startsWith("+254")
+    ){
+
+        phone =
+            phone.slice(1);
+    }
+
+    if(
+        phone.startsWith("07") ||
+        phone.startsWith("01")
+    ){
+
+        phone =
+            "254" +
+            phone.slice(1);
+    }
+
+    return phone;
+}
+
+
+/* =========================
+   PHONE VALIDATION
+========================= */
+
+function isValidKenyanPhone(
+    phone
+){
+
+    return /^254(?:7|1)\d{8}$/
+        .test(phone);
+}
+
+
+/* =========================
+   BUTTON STATE
+========================= */
+
+function setLoading(
+    loading,
+    text = "Processing..."
+){
+
+    payBtn.disabled =
+        loading;
+
+    payBtn.textContent =
+        loading
+            ? text
+            : "Pay Processing Fee";
+}
+
+
+/* =========================
+   JSON RESPONSE
+========================= */
+
+async function readJson(
+    response
+){
+
+    const text =
+        await response.text();
+
+    try{
+
+        return text
+            ? JSON.parse(text)
+            : {};
+
+    }catch{
+
+        throw new Error(
+            "The server returned an invalid response."
+        );
+    }
+}
+
+
+/* =========================
+   START PAYMENT
+========================= */
+
+async function payNow(){
+
+    const phone =
+        normalizePhone(
+            phoneEl.value.trim()
+        );
+
+
+    if(
+        !isValidKenyanPhone(phone)
+    ){
+
+        setMessage(
+            "Enter a valid Kenyan M-PESA number, e.g. 254712345678.",
+            "error"
+        );
+
+        phoneEl.focus();
+
+        return;
+    }
+
+
+    localStorage.setItem(
+        "phoneNumber",
+        phone
+    );
+
+
+    localStorage.setItem(
+        "fullName",
+        document.getElementById(
+            "fullName"
+        ).value
+    );
+
+
+    setLoading(
+        true,
+        "Sending STK Push..."
+    );
+
+
+    setMessage(
+        "Sending an M-PESA payment request..."
+    );
+
+
+    try{
+
+        const response =
+            await fetch(
+                BACKEND_URL +
+                "/stk-push",
+                {
+
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        phone:phone,
+
+                        amount:
+                            processingFee
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await readJson(
+                response
+            );
+
+
+        console.log(
+            "STK RESPONSE:",
+            data
+        );
+
+
+        if(
+            !response.ok ||
+            !data.success
+        ){
+
+            throw new Error(
+                data.message ||
+                "STK Push failed."
+            );
+        }
+
+
+        /*
+         * Supports both:
+         *
+         * data.transactionId
+         *
+         * and
+         *
+         * data.checkout_request_id
+         */
+
+        const transactionId =
+
+            data.transactionId ||
+
+            data.checkout_request_id ||
+
+            data.data?.transactionId ||
+
+            data.data?.checkout_request_id;
+
+
+        if(!transactionId){
+
+            throw new Error(
+                "The server did not return a transaction ID."
+            );
+        }
+
+
+        setLoading(
+            true,
+            "Waiting for payment..."
+        );
+
+
+        setMessage(
+            "M-PESA prompt sent. Enter your M-PESA PIN on your phone to complete the payment."
+        );
+
+
+        await checkPayment(
+            transactionId
+        );
+
+
+    }catch(error){
+
+        console.error(
+            "PAYMENT ERROR:",
+            error
+        );
+
+
+        setMessage(
+            error.message ||
+            "Payment request failed.",
+            "error"
+        );
+
+
+        setLoading(
+            false
+        );
+    }
+}
+
+
+/* =========================
+   CHECK PAYMENT
+========================= */
+
+async function checkPayment(
+    transactionId
+){
+
+    const startedAt =
+        Date.now();
+
+    const timeoutMs =
+        2 * 60 * 1000;
+
+
+    while(
+        Date.now() -
+        startedAt <
+        timeoutMs
+    ){
+
+        try{
+
+            const response =
+                await fetch(
+                    BACKEND_URL +
+                    "/payment-status",
+                    {
+
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                transactionId:
+                                    transactionId
+
+                            })
+
+                    }
+                );
+
+
+            const result =
+                await readJson(
+                    response
+                );
+
+
+            console.log(
+                "PAYMENT STATUS:",
+                result
+            );
+
+
+            if(
+                result.success &&
+                result.data
+            ){
+
+                const payment =
+                    result.data;
+
+
+                const status =
+                    String(
+                        payment.status ||
+                        ""
+                    ).toUpperCase();
+
+
+                /*
+                 * SUCCESS
+                 */
+
+                if(
+
+                    status ===
+                    "COMPLETED" ||
+
+                    status ===
+                    "SUCCESS" ||
+
+                    status ===
+                    "CONFIRMED"
+
+                ){
+
+                    setMessage(
+                        "Payment successful. Redirecting...",
+                        "success"
+                    );
+
+
+                    setTimeout(
+                        function(){
+
+                            window.location.href =
+                                "delivery.html";
+
+                        },
+                        800
+                    );
+
+
+                    return;
+                }
+
+
+                /*
+                 * FAILED
+                 */
+
+                if(
+
+                    status ===
+                    "CANCELLED" ||
+
+                    status ===
+                    "FAILED" ||
+
+                    status ===
+                    "EXPIRED"
+
+                ){
+
+                    throw new Error(
+                        "Payment " +
+                        status.toLowerCase() +
+                        "."
+                    );
+                }
+
+            }
+
+
+        }catch(error){
+
+            console.error(
+                "STATUS ERROR:",
+                error
+            );
+
+
+            if(
+
+                /cancelled|failed|expired/i
+                    .test(error.message)
+
+            ){
+
+                setMessage(
+                    error.message,
+                    "error"
+                );
+
+
+                setLoading(
+                    false
+                );
+
+
+                return;
+            }
+
+        }
+
+
+        /*
+         * Wait 3 seconds
+         * before checking again.
+         */
+
+        await new Promise(
+            resolve =>
+                setTimeout(
+                    resolve,
+                    3000
+                )
+        );
+    }
+
+
+    /*
+     * TIMEOUT
+     */
+
+    setMessage(
+        "We could not confirm the payment within the expected time. Check your M-PESA messages before trying again.",
+        "error"
+    );
+
+
+    setLoading(
+        false
+    );
+}
+
+
+/* =========================
+   BUTTON
+========================= */
+
+payBtn.addEventListener(
+    "click",
+    payNow
+);
+
+
+/* =========================
+   PHONE INPUT
+========================= */
+
+phoneEl.addEventListener(
+    "input",
+    function(){
+
+        phoneEl.value =
+            phoneEl.value.replace(
+                /[^\d+]/g,
+                ""
+            );
+    }
+);
+
+
+/* =========================
+   ENTER KEY
+========================= */
+
+phoneEl.addEventListener(
+    "keydown",
+    function(event){
+
+        if(
+            event.key ===
+            "Enter"
+        ){
+
+            payNow();
+        }
+    }
+);
+
+</script>
+
+</body>
+</html>
