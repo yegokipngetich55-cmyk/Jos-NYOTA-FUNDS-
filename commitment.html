@@ -5,18 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title></title>
-
 <style>
 *{
     box-sizing:border-box;
+}
+
+:root{
+    --green:#0B7A2F;
+    --blue:#2563EB;
+    --blue-dark:#1D4ED8;
+    --white:#FFFFFF;
+    --text:#111827;
+    --muted:#6B7280;
+    --border:#E5E7EB;
 }
 
 body{
     margin:0;
     padding:16px 10px;
     font-family:Arial,sans-serif;
-    background:#0B0217;
-    color:#fff;
+    background:linear-gradient(135deg,var(--green),var(--blue));
+    color:var(--text);
 }
 
 .container{
@@ -27,22 +36,14 @@ body{
 
 .card{
     width:100%;
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,0.09),
-            rgba(255,255,255,0.035)
-        );
+    background:#fff;
     padding:22px 18px 18px;
     border-radius:18px;
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.45),
-        inset 0 1px 0 rgba(255,255,255,0.05);
-    border:1px solid rgba(255,255,255,0.10);
+    box-shadow:0 10px 25px rgba(0,0,0,.18);
 }
 
 h2{
-    color:#fff;
+    color:var(--green);
     font-size:22px;
     font-weight:700;
     text-align:center;
@@ -50,24 +51,24 @@ h2{
 }
 
 .info-box{
-    background:rgba(155,53,255,0.08);
-    color:rgba(255,255,255,0.78);
+    background:#F8FAFF;
+    color:#555;
     padding:14px 12px;
     border-radius:12px;
     font-size:14px;
     line-height:1.5;
     text-align:center;
     margin-bottom:10px;
-    border:1px solid rgba(155,53,255,0.18);
+    border:1px solid var(--border);
 }
 
 .details{
-    background:rgba(255,255,255,0.045);
+    background:#fff;
     padding:15px;
     border-radius:13px;
     text-align:left;
     font-size:14px;
-    border:1px solid rgba(255,255,255,0.10);
+    border:1px solid var(--border);
     margin-bottom:15px;
 }
 
@@ -77,11 +78,11 @@ h2{
 }
 
 .details b{
-    color:rgba(255,255,255,0.88);
+    color:var(--green);
 }
 
 .details span{
-    color:#B86CFF;
+    color:var(--blue);
     font-weight:600;
 }
 
@@ -91,23 +92,17 @@ button{
     margin-top:5px;
     border:none;
     border-radius:11px;
-    background:
-        linear-gradient(
-            135deg,
-            #9B35FF,
-            #6C1DCE
-        );
+    background:linear-gradient(135deg,var(--blue),var(--blue-dark));
     color:#fff;
     font-size:16px;
     font-weight:700;
     cursor:pointer;
-    box-shadow:
-        0 10px 30px rgba(137,43,226,0.30);
+    box-shadow:0 8px 22px rgba(37,99,235,.25);
 }
 
 button:disabled{
-    background:rgba(255,255,255,0.25);
-    color:rgba(255,255,255,0.55);
+    background:#BFC7D5;
+    color:#fff;
     cursor:not-allowed;
     box-shadow:none;
 }
@@ -121,20 +116,21 @@ button:disabled{
 }
 
 .success{
-    color:#6DFFAA;
+    color:#0B7A2F;
 }
 
 .error{
-    color:#FF7D8A;
+    color:#DC2626;
 }
 
 .secure{
     margin:13px 0 0;
     text-align:center;
     font-size:12px;
-    color:rgba(255,255,255,0.40);
+    color:#6B7280;
 }
 </style>
+
 </head>
 
 <body>
