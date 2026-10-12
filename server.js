@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 
 const express = require("express");
@@ -8,8 +9,13 @@ const path = require("path");
 
 const app = express();
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 8080;
 const PAYLOR_API_URL = "https://api.paylorke.com";
+
+const BACKEND_URL = (
+  process.env.BACKEND_URL ||
+  "https://jos-nyota-funds-production.up.railway.app"
+).replace(/\/+$/, "");
 
 // ===============================
 // CORS
@@ -18,20 +24,44 @@ const PAYLOR_API_URL = "https://api.paylorke.com";
 app.use(cors({
   origin: true,
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"]
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Idempotency-Key"
+  ]
 }));
 
 app.use(express.json());
 
 // ===============================
 // SERVE FRONTEND
+// HTML and other frontend files
+// are stored in the repository root.
 // ===============================
 
-app.use(express.static(path.join(__dirname, "public")));
+const FRONTEND_FILES = {
+  "/": "index.html",
+  "/index.html": "index.html",
+  "/amount.html": "amount.html",
+  "/apply.html": "apply.html",
+  "/commitment.html": "commitment.html",
+  "/delivery.html": "delivery.html",
+  "/payment.html": "payment.html",
+  "/purpose.html": "purpose.html",
+  "/success.html": "success.html",
+  "/style.css": "style.css",
+  "/nyotake.png": "nyotake.png"
+};
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+for (const [route, filename] of Object.entries(FRONTEND_FILES)) {
+  app.get(route, (req, res) => {
+    res.sendFile(path.join(__dirname, filename), (err) => {
+      if (err && !res.headersSent) {
+        res.status(err.statusCode || 404).send("Page or file not found");
+      }
+    });
+  });
+}
 
 // ===============================
 // STK PUSH
@@ -39,9 +69,9 @@ app.get("/", (req, res) => {
 
 app.post("/stk-push", async (req, res) => {
   try {
-    const { phone, amount } = req.body;
+    const { phone, amount } = req.body || {};
 
-    if (!phone || !amount) {
+    if (!phone || amount === undefined || amount === null || amount === "") {
       return res.status(400).json({
         success: false,
         message: "Phone number and amount are required"
@@ -61,16 +91,28 @@ app.post("/stk-push", async (req, res) => {
 
     const paymentAmount = Number(amount);
 
-    if (!Number.isInteger(paymentAmount) || paymentAmount <= 0) {
+    if (!Number.isSafeInteger(paymentAmount) || paymentAmount <= 0) {
       return res.status(400).json({
         success: false,
         message: "Invalid payment amount"
       });
     }
 
-    const reference = `ORDER-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`.toUpperCase();
+    if (!process.env.PAYLOR_API_KEY ||
+        !process.env.PAYLOR_CHANNEL_ID) {
+      console.error("Paylor credentials are not configured");
 
-    const callbackUrl = `${process.env.BACKEND_URL || "https://nyota-funds-jo.onrender.com"}/api/paylor-callback`;
+      return res.status(500).json({
+        success: false,
+        message: "Payment service is not configured"
+      });
+    }
+
+    const reference = (
+      `ORDER-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`
+    ).toUpperCase();
+
+    const callbackUrl = `${BACKEND_URL}/api/paylor-callback`;
 
     const payload = {
       phone: cleanPhone,
@@ -81,8 +123,7 @@ app.post("/stk-push", async (req, res) => {
       callbackUrl
     };
 
-    console.log("Sending STK request to Paylor");
-    console.log(payload);
+    console.log("Sending STK request to Paylor", { reference });
 
     const response = await axios.post(
       `${PAYLOR_API_URL}/api/v1/merchants/payments/stk-push`,
@@ -97,8 +138,6 @@ app.post("/stk-push", async (req, res) => {
       }
     );
 
-    console.log("Paylor response:", response.data);
-
     res.json({
       success: true,
       transactionId: response.data.transactionId,
@@ -107,28 +146,41 @@ app.post("/stk-push", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("STK Push error:", error.response?.data || error.message);
+    console.error(
+      "STK Push error:",
+      error.response?.data?.message || error.message
+    );
 
     res.status(error.response?.status || 500).json({
       success: false,
-      message: error.response?.data?.message || error.message,
-      error: error.response?.data || null
+      message:
+        error.response?.data?.message ||
+        "Unable to initiate payment. Please try again."
     });
   }
 });
 
 // ===============================
 // PAYMENT STATUS
+// This endpoint requires a POST
+// request containing transactionId.
 // ===============================
 
 app.post("/payment-status", async (req, res) => {
   try {
-    const { transactionId } = req.body;
+    const { transactionId } = req.body || {};
 
     if (!transactionId) {
       return res.status(400).json({
         success: false,
         message: "transactionId is required"
+      });
+    }
+
+    if (!process.env.PAYLOR_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: "Payment service is not configured"
       });
     }
 
@@ -148,44 +200,57 @@ app.post("/payment-status", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Payment status error:", error.response?.data || error.message);
+    console.error(
+      "Payment status error:",
+      error.response?.data?.message || error.message
+    );
 
     res.status(error.response?.status || 500).json({
       success: false,
-      message: error.response?.data?.message || error.message,
-      error: error.response?.data || null
+      message:
+        error.response?.data?.message ||
+        "Unable to retrieve payment status"
     });
   }
 });
 
 // ===============================
 // PAYLOR CALLBACK
+// IMPORTANT:
+// This acknowledges callbacks only.
+// Verify callback authenticity and
+// payment status before trusting them.
 // ===============================
 
 app.post("/api/paylor-callback", (req, res) => {
-  try {
-    console.log("Paylor callback received:");
-    console.log(JSON.stringify(req.body, null, 2));
+  console.log("Paylor callback received");
 
-    res.json({
-      success: true
-    });
+  // Do not treat this acknowledgement
+  // as proof that a payment succeeded.
+  // Add Paylor's documented signature/
+  // status verification before production.
 
-  } catch (error) {
-    console.error("Callback error:", error);
-
-    res.status(500).json({
-      success: false
-    });
-  }
+  return res.status(200).json({
+    success: true
+  });
 });
 
 // ===============================
 // WALLET
+// IMPORTANT:
+// Protect this endpoint with
+// authentication before production.
 // ===============================
 
 app.get("/api/wallet", async (req, res) => {
   try {
+    if (!process.env.PAYLOR_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: "Payment service is not configured"
+      });
+    }
+
     const response = await axios.get(
       `${PAYLOR_API_URL}/api/v1/merchants/payments/wallet`,
       {
@@ -199,13 +264,27 @@ app.get("/api/wallet", async (req, res) => {
     res.json(response.data);
 
   } catch (error) {
-    console.error("Wallet error:", error.response?.data || error.message);
+    console.error(
+      "Wallet error:",
+      error.response?.data?.message || error.message
+    );
 
     res.status(error.response?.status || 500).json({
       success: false,
       message: "Unable to retrieve wallet"
     });
   }
+});
+
+// ===============================
+// HEALTH CHECK
+// ===============================
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "NYOTA Funds backend is running"
+  });
 });
 
 // ===============================
@@ -220,9 +299,26 @@ app.use((req, res) => {
 });
 
 // ===============================
+// ERROR HANDLER
+// ===============================
+
+app.use((err, req, res, next) => {
+  console.error("Server error:", err.message);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(500).json({
+    success: false,
+    message: "Internal server error"
+  });
+});
+
+// ===============================
 // START SERVER
 // ===============================
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`NYOTA Funds server running on port ${PORT}`);
 });
