@@ -435,10 +435,7 @@ async function payNow(){
     try{
 
         const response =
-            await fetch(
-                BACKEND_URL +
-                "/stk-push",
-                {
+            await fetch(BACKEND_URL + "/payment-status", ...)
 
                     method:"POST",
 
